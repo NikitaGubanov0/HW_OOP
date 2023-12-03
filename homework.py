@@ -67,8 +67,8 @@ class SportsWalking(Training):
         speed_m_s = self.get_mean_speed() * self.KM_H_TO_M_S
         calories = (
             self.WEIGHT_MULTIPLIER * self.weight
-            + (speed_m_s ** 2 / self.height)
-            * self.SPEED_HEIGHT_MULTIPLIER * self.weight
+            + (speed_m_s ** 2 / self.height
+               * self.SPEED_HEIGHT_MULTIPLIER) * self.weight
         )
         return calories * self.duration * self.MIN_IN_H
 
