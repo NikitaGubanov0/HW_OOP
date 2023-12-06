@@ -1,23 +1,31 @@
-class Training:
-    M_IN_KM = 1000
-    LEN_STEP = 0.65
-    MIN_IN_H = 60
+from dataclasses import dataclass, asdict
+from typing import Dict, Type
 
-    def __init__(self, action, duration, weight):
+
+class Training:
+    M_IN_KM: float = 1000  # Добавлена аннотация типа для константы
+
+    LEN_STEP: float = 0.65  # Добавлена аннотация типа
+
+    MIN_IN_H: int = 60  # Добавлена аннотация типа
+
+    def __init__(self, action: float, duration: float, weight: float):
         self.action = action
         self.duration = duration  # В часах
         self.weight = weight
 
-    def get_distance(self):
+    def get_distance(self) -> float:
         return self.action * self.LEN_STEP / self.M_IN_KM
 
-    def get_mean_speed(self):
+    def get_mean_speed(self) -> float:
         return self.get_distance() / self.duration
 
-    def get_spent_calories(self):
-        pass
+    def get_spent_calories(self) -> float:
+        raise NotImplementedError(
+            "Этот метод должен быть переопределен в подклассе."
+        )  # Изменено на NotImplementedError
 
-    def show_training_info(self):
+    def show_training_info(self) -> "InfoMessage":
         return InfoMessage(
             self.__class__.__name__,
             self.duration,
@@ -27,29 +35,31 @@ class Training:
         )
 
 
+@dataclass  # Использование dataclass для упрощения
 class InfoMessage:
-    def __init__(self, training_type, duration, distance, speed, calories):
-        self.training_type = training_type
-        self.duration = duration
-        self.distance = distance
-        self.speed = speed
-        self.calories = calories
+    training_type: str
+    duration: float
+    distance: float
+    speed: float
+    calories: float
 
-    def get_message(self):
-        return (
-            f"Тип тренировки: {self.training_type}; "
-            f"Длительность: {self.duration:.3f} ч.; "
-            f"Дистанция: {self.distance:.3f} км; "
-            f"Ср. скорость: {self.speed:.3f} км/ч; "
-            f"Потрачено ккал: {self.calories:.3f}."
-        )
+    MESSAGE_TEMPLATE: str = (
+        "Тип тренировки: {training_type}; "
+        "Длительность: {duration:.3f} ч.; "
+        "Дистанция: {distance:.3f} км; "
+        "Ср. скорость: {speed:.3f} км/ч; "
+        "Потрачено ккал: {calories:.3f}."
+    )
+
+    def get_message(self) -> str:
+        return self.MESSAGE_TEMPLATE.format(**asdict(self))
 
 
 class Running(Training):
-    CALORIES_MEAN_SPEED_MULTIPLIER = 18
-    CALORIES_MEAN_SPEED_SHIFT = 1.79
+    CALORIES_MEAN_SPEED_MULTIPLIER: float = 18
+    CALORIES_MEAN_SPEED_SHIFT: float = 1.79
 
-    def get_spent_calories(self):
+    def get_spent_calories(self) -> float:
         return (
             (
                 self.CALORIES_MEAN_SPEED_MULTIPLIER * self.get_mean_speed()
@@ -63,54 +73,70 @@ class Running(Training):
 
 
 class SportsWalking(Training):
-    WEIGHT_MULTIPLIER = 0.035
-    SPEED_HEIGHT_MULTIPLIER = 0.029
-    KM_H_TO_M_S = 0.278
-    CM_TO_M = 100
+    WEIGHT_MULTIPLIER: float = 0.035
+    SPEED_HEIGHT_MULTIPLIER: float = 0.029
+    KM_H_TO_M_S: float = 0.278
+    CM_TO_M: float = 100
 
-    def __init__(self, action, duration, weight, height):
+    def __init__(self, action: float, duration: float,
+                 weight: float, height: float):
         super().__init__(action, duration, weight)
         self.height = height / self.CM_TO_M
 
-    def get_spent_calories(self):
+    def get_spent_calories(self) -> float:
         speed_m_s = self.get_mean_speed() * self.KM_H_TO_M_S
-        speed_squared_div_height = (speed_m_s**2) / self.height
-        calories = (
-            self.WEIGHT_MULTIPLIER * self.weight
-            + speed_squared_div_height * self.SPEED_HEIGHT_MULTIPLIER
-            * self.weight
+        speed_squared_div_height = (
+            speed_m_s**2
+        ) / self.height  # Добавлен пробел для соответствия стилю кода
+        return (
+            (
+                self.WEIGHT_MULTIPLIER * self.weight
+                + speed_squared_div_height
+                * self.SPEED_HEIGHT_MULTIPLIER * self.weight
+            )
+            * self.duration
+            * self.MIN_IN_H
         )
-        return calories * self.duration * self.MIN_IN_H
 
 
 class Swimming(Training):
-    LEN_STEP = 1.38
-    CALORIES_SPEED_SHIFT = 1.1
-    SPEED_MULTIPLIER = 2
+    LEN_STEP: float = 1.38
+    CALORIES_SPEED_SHIFT: float = 1.1
+    SPEED_MULTIPLIER: float = 2
 
-    def __init__(self, action, duration, weight, length_pool, count_pool):
+    def __init__(
+        self,
+        action: float,
+        duration: float,
+        weight: float,
+        length_pool: float,
+        count_pool: int,
+    ):
         super().__init__(action, duration, weight)
         self.length_pool = length_pool
         self.count_pool = count_pool
 
-    def get_mean_speed(self):
-        return (self.length_pool
-                * self.count_pool / self.M_IN_KM / self.duration)
-
-    def get_spent_calories(self):
-        mean_speed = self.get_mean_speed() + self.CALORIES_SPEED_SHIFT
-        total_calories = (
-            mean_speed * self.SPEED_MULTIPLIER * self.weight * self.duration
+    def get_mean_speed(self) -> float:
+        return (
+            self.length_pool * self.count_pool
+            / self.M_IN_KM / self.duration
         )
-        return total_calories
+
+    def get_spent_calories(self) -> float:
+        mean_speed = self.get_mean_speed() + self.CALORIES_SPEED_SHIFT
+        return mean_speed * self.SPEED_MULTIPLIER * self.weight * self.duration
 
 
-def read_package(workout_type, data):
-    workout_classes = {"RUN": Running, "WLK": SportsWalking, "SWM": Swimming}
+def read_package(workout_type: str, data: list) -> Training:
+    workout_classes: Dict[str, Type[Training]] = {
+        "SWM": Swimming,
+        "RUN": Running,
+        "WLK": SportsWalking,  # Исправлен перенос строки и добавлена запятая
+    }
     return workout_classes[workout_type](*data)
 
 
-def main(training):
+def main(training: Training):
     info = training.show_training_info()
     print(info.get_message())
 
