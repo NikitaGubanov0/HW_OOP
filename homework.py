@@ -1,12 +1,11 @@
 from dataclasses import dataclass, asdict
 from typing import Dict, Type
+from typing import ClassVar
 
 
 class Training:
     M_IN_KM: float = 1000  # Добавлена аннотация типа для константы
-
     LEN_STEP: float = 0.65  # Добавлена аннотация типа
-
     MIN_IN_H: int = 60  # Добавлена аннотация типа
 
     def __init__(self, action: float, duration: float, weight: float):
@@ -43,7 +42,7 @@ class InfoMessage:
     speed: float
     calories: float
 
-    MESSAGE_TEMPLATE: str = (
+    MESSAGE_TEMPLATE: ClassVar[str] = (
         "Тип тренировки: {training_type}; "
         "Длительность: {duration:.3f} ч.; "
         "Дистанция: {distance:.3f} км; "
@@ -56,7 +55,7 @@ class InfoMessage:
 
 
 class Running(Training):
-    CALORIES_MEAN_SPEED_MULTIPLIER: float = 18
+    CALORIES_MEAN_SPEED_MULTIPLIER: float = 18.0
     CALORIES_MEAN_SPEED_SHIFT: float = 1.79
 
     def get_spent_calories(self) -> float:
@@ -84,15 +83,12 @@ class SportsWalking(Training):
         self.height = height / self.CM_TO_M
 
     def get_spent_calories(self) -> float:
-        speed_m_s = self.get_mean_speed() * self.KM_H_TO_M_S
-        speed_squared_div_height = (
-            speed_m_s**2
-        ) / self.height  # Добавлен пробел для соответствия стилю кода
         return (
             (
-                self.WEIGHT_MULTIPLIER * self.weight
-                + speed_squared_div_height
-                * self.SPEED_HEIGHT_MULTIPLIER * self.weight
+                self.WEIGHT_MULTIPLIER
+                * self.weight
+                + (self.get_mean_speed() * self.KM_H_TO_M_S)**2
+                / self.height * self.SPEED_HEIGHT_MULTIPLIER * self.weight
             )
             * self.duration
             * self.MIN_IN_H
@@ -128,12 +124,12 @@ class Swimming(Training):
 
 
 def read_package(workout_type: str, data: list) -> Training:
-    workout_classes: Dict[str, Type[Training]] = {
+    WORKOUT_CLASSES: Dict[str, Type[Training]] = {
         "SWM": Swimming,
         "RUN": Running,
         "WLK": SportsWalking,  # Исправлен перенос строки и добавлена запятая
     }
-    return workout_classes[workout_type](*data)
+    return WORKOUT_CLASSES[workout_type](*data)
 
 
 def main(training: Training):
