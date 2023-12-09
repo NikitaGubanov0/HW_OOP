@@ -1,16 +1,15 @@
 from dataclasses import dataclass, asdict
-from typing import Dict, Type
-from typing import ClassVar
+from typing import Dict, Type, ClassVar
 
 
 class Training:
-    M_IN_KM: float = 1000  # Добавлена аннотация типа для константы
-    LEN_STEP: float = 0.65  # Добавлена аннотация типа
-    MIN_IN_H: int = 60  # Добавлена аннотация типа
+    M_IN_KM: float = 1000.0
+    LEN_STEP: float = 0.65
+    MIN_IN_H: int = 60
 
     def __init__(self, action: float, duration: float, weight: float):
         self.action = action
-        self.duration = duration  # В часах
+        self.duration = duration
         self.weight = weight
 
     def get_distance(self) -> float:
@@ -75,7 +74,7 @@ class SportsWalking(Training):
     WEIGHT_MULTIPLIER: float = 0.035
     SPEED_HEIGHT_MULTIPLIER: float = 0.029
     KM_H_TO_M_S: float = 0.278
-    CM_TO_M: float = 100
+    CM_TO_M: float = 100.0
 
     def __init__(self, action: float, duration: float,
                  weight: float, height: float):
@@ -98,7 +97,7 @@ class SportsWalking(Training):
 class Swimming(Training):
     LEN_STEP: float = 1.38
     CALORIES_SPEED_SHIFT: float = 1.1
-    SPEED_MULTIPLIER: float = 2
+    SPEED_MULTIPLIER: float = 2.0
 
     def __init__(
         self,
@@ -119,8 +118,10 @@ class Swimming(Training):
         )
 
     def get_spent_calories(self) -> float:
-        mean_speed = self.get_mean_speed() + self.CALORIES_SPEED_SHIFT
-        return mean_speed * self.SPEED_MULTIPLIER * self.weight * self.duration
+        return (
+            (self.get_mean_speed() + self.CALORIES_SPEED_SHIFT)
+            * self.SPEED_MULTIPLIER * self.weight * self.duration
+        )
 
 
 def read_package(workout_type: str, data: list) -> Training:
